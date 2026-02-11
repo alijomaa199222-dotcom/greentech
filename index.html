@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Page</title>
+<style>
+body{font-family:Arial;margin:0;background:#f2f2f2;}
+header{background:green;color:white;padding:20px;text-align:center;font-size:22px;}
+.nav{display:flex;justify-content:space-around;background:white;padding:12px;box-shadow:0 2px 6px rgba(0,0,0,0.15);}
+.nav a{text-decoration:none;font-weight:bold;color:#1e5aa8;}
+.container{padding:15px;}
+input{width:100%;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:8px;}
+button{padding:10px 14px;border:none;border-radius:8px;cursor:pointer;margin:5px;font-weight:bold;background: green;color: white;}
+.editBtn{background:blue;color:white;}
+.removeBtn{background:red;color:white;}
+table{width:100%;border-collapse:collapse;margin-top:15px;background:white;}
+th,td{padding:10px;border:1px solid #ddd;text-align:center;}
+#searchResults{background:white;border:1px solid #ccc;max-height:150px;overflow-y:auto;border-radius:6px;}
+#searchResults div{padding:8px;border-bottom:1px solid #eee;cursor:pointer;}
+#searchResults div:hover{background:#f0f0f0;}
+.totals{background:white;padding:12px;margin-top:15px;border-radius:10px;font-size:18px;}
+.printBtn{background:#444;color:white;}
+.exportBtn{background:orange;color:white;}
+#h2{text-align: center;border: green;}
+</style>
+</head>
+<body>
+
+<header>
+    <img id="header" src="green-lion.png" alt="green tech" width="80px" height="80px">
+</header>
+<h2 id="h2">📦 Stock Management</h2>
+<nav class="nav">
+  <a href="index.html">📦 Stock</a>
+  <a href="sales.html">💰 Sales</a>
+  <a href="history.html">📊 History</a>
+  <a href="dealers.html">📒 Dealers</a>
+  <a href="dealers-history.html">📜 Payments</a>
+  <a href="customers.html">👥 Customers</a>
+</nav>
+
+<div class="container">
+
+<h3>🔍 Search Product</h3>
+<input type="text" id="search" placeholder="Type product name..." onkeyup="searchProduct()">
+<div id="searchResults"></div>
+
+<h3>➕ Add New Product</h3>
+<input type="text" id="newBarcode" placeholder="Barcode">
+<input type="text" id="newName" placeholder="Product Name">
+<input type="number" id="newQty" placeholder="Quantity">
+<input type="number" id="newCost" placeholder="Cost">
+<input type="number" id="newPrice" placeholder="Price">
+<button onclick="addProduct()">Add Product</button>
+
+<div class="totals">
+<p>Total Quantity: <span id="totalQty">0</span></p>
+<p>Total Cost: <span id="totalCost">0</span></p>
+</div>
+
+<button class="printBtn" onclick="window.print()">🖨 Print</button>
+<button class="exportBtn" onclick="exportCSV()">⬇ Export CSV</button>
+
+<table>
+<thead>
+<tr>
+<th>Barcode</th><th>Name</th><th>Qty</th><th>Cost</th><th>Price</th><th>Edit</th><th>Remove</th>
+</tr>
+</thead>
+<tbody id="stockTable"></tbody>
+</table>
+
+</div>
+
+<script>
+// بيانات المخزون
+let stock = JSON.parse(localStorage.getItem("stock")) || [];
+
+// حفظ
+function saveStock(){localStorage.setItem("stock",JSON.stringify(stock));}
+
+// إضافة منتج
+function addProduct(){
+    let barcode=document.getElementById("newBarcode").value.trim();
+    let name=document.getElementById("newName").value.trim();
+    let qty=Number(document.getElementById("newQty").value);
+    let cost=Number(document.getElementById("newCost").value);
+    let price=Number(document.getElementById("newPrice").value);
+
+    if(!barcode || !name || qty<=0 || cost<=0 || price<=0){alert("Fill all fields correctly!"); return;}
+
+    if(stock.find(p=>p.barcode===barcode)){alert("Barcode exists!"); return;}
+
+    stock.push({barcode,name,quantity:qty,cost,price});
+    saveStock();
+    renderStock();
+    document.getElementById("newBarcode").value="";
+    document.getElementById("newName").value="";
+    document.getElementById("newQty").value="";
+    document.getElementById("newCost").value="";
+    document.getElementById("newPrice").value="";
+}
+
+// بحث
+function searchProduct(){
+    let text=document.getElementById("search").value.toLowerCase();
+    let box=document.getElementById("searchResults"); box.innerHTML="";
+    if(text==="") return;
+    stock.filter(p=>p.name.toLowerCase().includes(text)).forEach(p=>{
+        box.innerHTML += `<div>${p.name} (Qty:${p.quantity})</div>`;
+    });
+}
+
+// عرض المخزون
+function renderStock(){
+    let table=""; let totalQty=0,totalCost=0;
+    stock.forEach((item,i)=>{
+        totalQty += item.quantity;
+        totalCost += item.cost*item.quantity;
+        table += `<tr>
+            <td>${item.barcode}</td>
+            <td>${item.name}</td>
+            <td>${item.quantity}</td>
+            <td>${item.cost}</td>
+            <td>${item.price}</td>
+            <td><button class="editBtn" onclick="editProduct(${i})">Edit</button></td>
+            <td><button class="removeBtn" onclick="removeProduct(${i})">X</button></td>
+        </tr>`;
+    });
+    document.getElementById("stockTable").innerHTML=table;
+    document.getElementById("totalQty").innerText=totalQty;
+    document.getElementById("totalCost").innerText=totalCost;
+}
+
+// تعديل
+function editProduct(i){
+    let item=stock[i];
+    let newName=prompt("New Name:",item.name); if(!newName) return;
+    let newQty=prompt("New Quantity:",item.quantity); if(newQty===null) return; newQty=Number(newQty);
+    let newCost=prompt("New Cost:",item.cost); if(newCost===null) return; newCost=Number(newCost);
+    let newPrice=prompt("New Price:",item.price); if(newPrice===null) return; newPrice=Number(newPrice);
+
+    item.name=newName;
+    item.quantity=newQty;
+    item.cost=newCost;
+    item.price=newPrice;
+
+    saveStock();
+    renderStock();
+}
+
+// إزالة
+function removeProduct(i){
+    if(confirm("Remove product?")){
+        stock.splice(i,1);
+        saveStock();
+        renderStock();
+    }
+}
+
+// تصدير CSV
+function exportCSV(){
+    let csv="Barcode,Name,Quantity,Cost,Price\n";
+    stock.forEach(item=>{
+        csv += `${item.barcode},${item.name},${item.quantity},${item.cost},${item.price}\n`;
+    });
+    let blob=new Blob([csv],{type:"text/csv"});
+    let link=document.createElement("a");
+    link.href=URL.createObjectURL(blob);
+    link.download="stock.csv";
+    link.click();
+}
+
+renderStock();
+</script>
+
+</body>
+</html>

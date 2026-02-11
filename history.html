@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>History Reports</title>
+<style>
+body{font-family:Arial;margin:0;background:#f2f2f2;}
+header{background:green;color:white;padding:20px;text-align:center;font-size:22px;}
+.nav{display:flex;justify-content:space-around;background:white;padding:12px;box-shadow:0 2px 6px rgba(0,0,0,0.15);}
+.nav a{text-decoration:none;font-weight:bold;color:#1e5aa8;}
+.nav a:hover{color:green;}
+.datetime{text-align:center;margin:10px;font-weight:bold;}
+.container{padding:15px;}
+.tabs{display:flex;justify-content:space-around;margin:15px 0;}
+.tabs button{flex:1;padding:10px;border:none;cursor:pointer;font-weight:bold;background:#ddd;}
+.tabs button.active{background:#1e5aa8;color:white;}
+table{width:100%;border-collapse:collapse;margin-top:15px;background:white;}
+th,td{padding:10px;border:1px solid #ddd;text-align:center;}
+.printBtn{background:#444;color:white;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;margin:5px;}
+.exportBtn{background:orange;color:white;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;margin:5px;}
+#h2{text-align: center;}
+</style>
+</head>
+<body>
+
+<header> 
+    <img id="header" src="green-lion.png" alt="green tech" width="80px" height="80px">
+</header>
+<h2 id="h2">📊 History Reports</h2>
+<nav class="nav">
+  <a href="index.html">📦 Stock</a>
+  <a href="sales.html">💰 Sales</a>
+  <a href="history.html">📊 History</a>
+  <a href="dealers.html">📒 Dealers</a>
+  <a href="dealers-history.html">📜 Payments</a>
+  <a href="customers.html">👥 Customers</a>
+</nav>
+
+<div class="datetime" id="datetime"></div>
+
+<div class="container">
+    <div class="tabs">
+        <button id="dayBtn" class="active" onclick="showTab('day')">📅 Day</button>
+        <button id="monthBtn" onclick="showTab('month')">📆 Month</button>
+        <button id="yearBtn" onclick="showTab('year')">🗓 Year</button>
+    </div>
+
+    <button class="printBtn" onclick="window.print()">🖨 Print</button>
+    <button class="exportBtn" onclick="exportCSV()">⬇ Export CSV</button>
+
+    <table>
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+</div>
+
+<script>
+let historyData = JSON.parse(localStorage.getItem("history")) || [];
+let currentTab="day";
+
+/* DateTime */
+function updateDateTime(){
+    document.getElementById("datetime").innerText = new Date().toLocaleString();
+}
+setInterval(updateDateTime,1000);
+updateDateTime();
+
+/* Tabs */
+function showTab(tab){
+    currentTab=tab;
+    document.getElementById("dayBtn").classList.remove("active");
+    document.getElementById("monthBtn").classList.remove("active");
+    document.getElementById("yearBtn").classList.remove("active");
+    if(tab==="day") document.getElementById("dayBtn").classList.add("active");
+    if(tab==="month") document.getElementById("monthBtn").classList.add("active");
+    if(tab==="year") document.getElementById("yearBtn").classList.add("active");
+    renderHistory();
+}
+
+/* Render History */
+function renderHistory(){
+    let head="", body="";
+
+    if(currentTab==="day"){
+        head=`<tr>
+            <th>DateTime</th><th>Barcode</th><th>Name</th><th>Qty</th><th>Cost</th><th>Price</th><th>Profit</th>
+        </tr>`;
+        historyData.forEach(item=>{
+            let profit=(item.price-item.cost)*item.qty;
+            body+=`<tr>
+                <td>${item.datetime}</td>
+                <td>${item.barcode}</td>
+                <td>${item.name}</td>
+                <td>${item.qty}</td>
+                <td>${item.cost}</td>
+                <td>${item.price}</td>
+                <td>${profit}</td>
+            </tr>`;
+        });
+    }
+
+    if(currentTab==="month"){
+        head=`<tr><th>Month</th><th>Total Price</th><th>Total Cost</th><th>Total Profit</th></tr>`;
+        let monthly={};
+        historyData.forEach(item=>{
+            let date=new Date(item.datetime);
+            let key=date.getFullYear()+"-"+(date.getMonth()+1);
+            if(!monthly[key]) monthly[key]={price:0,cost:0,profit:0};
+            monthly[key].price += item.price*item.qty;
+            monthly[key].cost += item.cost*item.qty;
+            monthly[key].profit += (item.price-item.cost)*item.qty;
+        });
+        for(let key in monthly){
+            body+=`<tr>
+                <td>${key}</td>
+                <td>${monthly[key].price}</td>
+                <td>${monthly[key].cost}</td>
+                <td>${monthly[key].profit}</td>
+            </tr>`;
+        }
+    }
+
+    if(currentTab==="year"){
+        head=`<tr><th>Year</th><th>Total Price</th><th>Total Cost</th><th>Total Profit</th></tr>`;
+        let yearly={};
+        historyData.forEach(item=>{
+            let date=new Date(item.datetime);
+            let key=date.getFullYear();
+            if(!yearly[key]) yearly[key]={price:0,cost:0,profit:0};
+            yearly[key].price += item.price*item.qty;
+            yearly[key].cost += item.cost*item.qty;
+            yearly[key].profit += (item.price-item.cost)*item.qty;
+        });
+        for(let key in yearly){
+            body+=`<tr>
+                <td>${key}</td>
+                <td>${yearly[key].price}</td>
+                <td>${yearly[key].cost}</td>
+                <td>${yearly[key].profit}</td>
+            </tr>`;
+        }
+    }
+
+    document.getElementById("tableHead").innerHTML=head;
+    document.getElementById("tableBody").innerHTML=body;
+}
+
+/* Export CSV */
+function exportCSV(){
+    let csv="";
+    if(currentTab==="day"){
+        csv="DateTime,Barcode,Name,Qty,Cost,Price,Profit\n";
+        historyData.forEach(item=>{
+            let profit=(item.price-item.cost)*item.qty;
+            csv+=`${item.datetime},${item.barcode},${item.name},${item.qty},${item.cost},${item.price},${profit}\n`;
+        });
+    }
+    if(currentTab==="month"){
+        csv="Month,TotalPrice,TotalCost,TotalProfit\n";
+        let monthly={};
+        historyData.forEach(item=>{
+            let date=new Date(item.datetime);
+            let key=date.getFullYear()+"-"+(date.getMonth()+1);
+            if(!monthly[key]) monthly[key]={price:0,cost:0,profit:0};
+            monthly[key].price += item.price*item.qty;
+            monthly[key].cost += item.cost*item.qty;
+            monthly[key].profit += (item.price-item.cost)*item.qty;
+        });
+        for(let key in monthly){
+            csv+=`${key},${monthly[key].price},${monthly[key].cost},${monthly[key].profit}\n`;
+        }
+    }
+    if(currentTab==="year"){
+        csv="Year,TotalPrice,TotalCost,TotalProfit\n";
+        let yearly={};
+        historyData.forEach(item=>{
+            let date=new Date(item.datetime);
+            let key=date.getFullYear();
+            if(!yearly[key]) yearly[key]={price:0,cost:0,profit:0};
+            yearly[key].price += item.price*item.qty;
+            yearly[key].cost += item.cost*item.qty;
+            yearly[key].profit += (item.price-item.cost)*item.qty;
+        });
+        for(let key in yearly){
+            csv+=`${key},${yearly[key].price},${yearly[key].cost},${yearly[key].profit}\n`;
+        }
+    }
+    let blob=new Blob([csv],{type:"text/csv"});
+    let link=document.createElement("a");
+    link.href=URL.createObjectURL(blob);
+    link.download="history.csv";
+    link.click();
+}
+
+renderHistory();
+</script>
+
+</body>
+</html>

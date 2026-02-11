@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales Page</title>
+<style>
+body{font-family:Arial;margin:0;background:#f2f2f2;}
+header{background:green;color:white;padding:20px;text-align:center;font-size:22px;}
+.nav{display:flex;justify-content:space-around;background:white;padding:12px;box-shadow:0 2px 6px rgba(0,0,0,0.15);}
+.nav a{text-decoration:none;font-weight:bold;color:#1e5aa8;}
+.container{padding:15px;}
+input{width:100%;padding:10px;margin:6px 0;border:1px solid #ccc;border-radius:8px;}
+button{padding:10px 14px;border:none;border-radius:8px;cursor:pointer;margin:5px;font-weight:bold;}
+.removeBtn{background:red;color:white;}
+.editBtn{background:blue;color:white;}
+table{width:100%;border-collapse:collapse;margin-top:15px;background:white;}
+th,td{padding:10px;border:1px solid #ddd;text-align:center;}
+.totals{background:white;padding:12px;margin-top:15px;border-radius:10px;font-size:18px;}
+#searchResults{background:white;border:1px solid #ccc;max-height:150px;overflow-y:auto;border-radius:6px;}
+#searchResults div{padding:8px;border-bottom:1px solid #eee;cursor:pointer;}
+#searchResults div:hover{background:#f0f0f0;}
+#h2{text-align: center;}
+</style>
+</head>
+<body>
+
+<header>
+    <img id="header" src="green-lion.png" alt="green tech" width="80px" height="80px">
+</header>
+<h2 id="h2">💰 Sales System</h2>
+<nav class="nav">
+  <a href="index.html">📦 Stock</a>
+  <a href="sales.html">💰 Sales</a>
+  <a href="history.html">📊 History</a>
+  <a href="dealers.html">📒 Dealers</a>
+  <a href="dealers-history.html">📜 Payments</a>
+  <a href="customers.html">👥 Customers</a>
+</nav>
+
+<div class="container">
+<h3>🔍 Search Product</h3>
+<input type="text" id="search" placeholder="Type product name..." onkeyup="searchByName()">
+<div id="searchResults"></div>
+
+<h3>📌 Barcode Scanner</h3>
+<input type="text" id="scanBarcode" placeholder="Scan Barcode..." onkeyup="scanProduct(event)">
+
+<table>
+<thead>
+<tr>
+<th>Barcode</th><th>Name</th><th>Qty</th><th>Cost</th><th>Price</th><th>Profit</th><th>Edit</th><th>Remove</th>
+</tr>
+</thead>
+<tbody id="cartTable"></tbody>
+</table>
+
+<div class="totals">
+<p>Total Price: <span id="totalPrice">0</span></p>
+<p>Total Cost: <span id="totalCost">0</span></p>
+<p>Total Profit: <span id="totalProfit">0</span></p>
+</div>
+
+<button onclick="endDay()" style="background:red;color:white;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;margin:5px;font-weight:bold;">🛑 End Day</button>
+
+</div>
+
+<script>
+// بيانات
+let stock = JSON.parse(localStorage.getItem("stock")) || [];
+let dailySales = JSON.parse(localStorage.getItem("dailySales")) || [];
+let historyData = JSON.parse(localStorage.getItem("history")) || [];
+let totalMoney = JSON.parse(localStorage.getItem("totalMoney")) || 0;
+
+// حفظ البيانات
+function saveDailySales(){localStorage.setItem("dailySales",JSON.stringify(dailySales));}
+function saveStock(){localStorage.setItem("stock",JSON.stringify(stock));}
+function saveHistory(){localStorage.setItem("history",JSON.stringify(historyData));}
+function saveMoney(){localStorage.setItem("totalMoney",JSON.stringify(totalMoney));}
+
+// البحث
+function searchByName(){
+    let text = document.getElementById("search").value.toLowerCase();
+    let box = document.getElementById("searchResults"); box.innerHTML="";
+    if(text==="") return;
+    stock.filter(p => p.name.toLowerCase().includes(text) && p.quantity > 0)
+    .forEach(p=>{
+        box.innerHTML += `<div onclick="addProductToSales('${p.barcode}')">${p.name} (Qty:${p.quantity})</div>`;
+    });
+}
+
+// إضافة للبيع
+function addProductToSales(barcode){
+    let product = stock.find(p=>p.barcode===barcode);
+    if(!product){alert("Product Not Found!");return;}
+    if(product.quantity<=0){alert("Out of Stock!");return;}
+
+    // خصم فورًا من stock
+    product.quantity -= 1;
+    saveStock();
+
+    let profit = product.price - product.cost;
+    let saleItem = {barcode:product.barcode,name:product.name,qty:1,cost:product.cost,price:product.price,profit:profit};
+    dailySales.push(saleItem);
+    saveDailySales();
+
+    // حفظ فورًا بالhistory
+    let histItem = {...saleItem, datetime:new Date().toLocaleString()};
+    historyData.push(histItem);
+    saveHistory();
+
+    // إضافة فورًا للمال
+    totalMoney += product.price;
+    saveMoney();
+
+    renderSales();
+    document.getElementById("search").value="";
+    document.getElementById("searchResults").innerHTML="";
+}
+
+// المسح بالباركود
+function scanProduct(e){
+    if(e.key==="Enter"){
+        let code = document.getElementById("scanBarcode").value.trim();
+        if(code!==""){ addProductToSales(code); }
+        document.getElementById("scanBarcode").value="";
+    }
+}
+
+// عرض الجدول
+function renderSales(){
+    let table=""; let totalPrice=0,totalCost=0,totalProfit=0;
+    dailySales.forEach((item,i)=>{
+        totalPrice += item.price*item.qty;
+        totalCost  += item.cost*item.qty;
+        totalProfit += item.profit*item.qty;
+        table += `<tr>
+            <td>${item.barcode}</td>
+            <td>${item.name}</td>
+            <td>${item.qty}</td>
+            <td>${item.cost}</td>
+            <td>${item.price}</td>
+            <td>${item.profit}</td>
+            <td><button class="editBtn" onclick="editItem(${i})">Edit</button></td>
+            <td><button class="removeBtn" onclick="removeItem(${i})">X</button></td>
+        </tr>`;
+    });
+    document.getElementById("cartTable").innerHTML=table;
+    document.getElementById("totalPrice").innerText=totalPrice;
+    document.getElementById("totalCost").innerText=totalCost;
+    document.getElementById("totalProfit").innerText=totalProfit;
+}
+
+// تعديل
+function editItem(i){
+    let item = dailySales[i];
+    let stockItem = stock.find(p=>p.barcode===item.barcode);
+
+    let newQty = prompt("New Quantity:",item.qty); if(newQty===null) return; newQty=Number(newQty);
+    let newPrice = prompt("New Price:",item.price); if(newPrice===null) return; newPrice=Number(newPrice);
+
+    if(newQty<=0 || newPrice<=0){alert("Invalid Values!");return;}
+
+    let deltaQty = newQty - item.qty;
+    if(stockItem && stockItem.quantity - deltaQty < 0){alert("Not enough stock!"); return;}
+    if(stockItem) stockItem.quantity -= deltaQty; saveStock();
+
+    item.qty=newQty; item.price=newPrice; item.profit=(newPrice-item.cost);
+
+    // حفظ في history
+    historyData.push({...item, datetime:new Date().toLocaleString()});
+    saveHistory();
+
+    // تحديث المال
+    totalMoney += (newPrice - item.price + item.profit);
+    saveMoney();
+
+    saveDailySales();
+    renderSales();
+}
+
+// إزالة
+function removeItem(i){
+    if(confirm("Remove item?")){
+        let item = dailySales[i];
+        let stockItem = stock.find(p=>p.barcode===item.barcode);
+        if(stockItem) stockItem.quantity += item.qty; saveStock();
+        dailySales.splice(i,1);
+        saveDailySales();
+        renderSales();
+    }
+}
+
+// نهاية اليوم
+function endDay(){
+    if(confirm("End Day = Clear Daily Sales?")){
+        dailySales=[];
+        saveDailySales();
+        renderSales();
+    }
+}
+
+renderSales();
+</script>
+</body>
+</html>

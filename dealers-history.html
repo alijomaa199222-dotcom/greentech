@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dealers Payments History</title>
+
+<style>
+body{
+    font-family: Arial;
+    margin:0;
+    background:#f2f2f2;
+}
+header{background:green;color:white;padding:20px;text-align:center;font-size:22px;}
+.nav{
+    display:flex;
+    justify-content:space-around;
+    background:white;
+    padding:12px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.15);
+}
+.nav a{
+    text-decoration:none;
+    font-weight:bold;
+    color:#1e5aa8;
+}
+.container{
+    padding:15px;
+}
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:15px;
+    background:white;
+}
+th,td{
+    padding:10px;
+    border:1px solid #ddd;
+    text-align:center;
+}
+.clearBtn{
+    background:red;
+    color:white;
+    padding:10px 14px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:bold;
+}
+#h2{text-align: center;}
+</style>
+</head>
+
+<body>
+
+<header>
+    <img id="header" src="green-lion.png" alt="green tech" width="80px" height="80px">
+</header>
+<h2 id="h2">📜 Dealers Payments History</h2>
+<nav class="nav">
+  <a href="index.html">📦 Stock</a>
+  <a href="sales.html">💰 Sales</a>
+  <a href="history.html">📊 History</a>
+  <a href="dealers.html">📒 Dealers</a>
+  <a href="dealers-history.html">📜 Payments</a>
+  <a href="customers.html">👥 Customers</a>
+</nav>
+
+<div class="container">
+
+<button class="clearBtn" onclick="clearHistory()">🗑 Clear History</button>
+
+<table>
+<thead>
+<tr>
+<th>Date & Time</th>
+<th>Dealer</th>
+<th>Paid Amount</th>
+</tr>
+</thead>
+<tbody id="historyTable"></tbody>
+</table>
+
+</div>
+
+<script>
+let dealerHistory = JSON.parse(localStorage.getItem("dealerHistory")) || [];
+
+/* Render History */
+function renderHistory(){
+    let table="";
+
+    dealerHistory.slice().reverse().forEach(h=>{
+        table += `
+        <tr>
+          <td>${h.datetime}</td>
+          <td>${h.name}</td>
+          <td>${h.paid}</td>
+        </tr>`;
+    });
+
+    document.getElementById("historyTable").innerHTML=table;
+}
+
+/* Clear */
+function clearHistory(){
+    if(confirm("Clear all payment history?")){
+        localStorage.removeItem("dealerHistory");
+        dealerHistory=[];
+        renderHistory();
+    }
+}
+
+renderHistory();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dealers Page</title>
+
+<style>
+body{
+    font-family: Arial;
+    margin:0;
+    background:#f2f2f2;
+}
+header{background:green;color:white;padding:20px;text-align:center;font-size:22px;}
+.nav{
+    display:flex;
+    justify-content:space-around;
+    background:white;
+    padding:12px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.15);
+}
+.nav a{
+    text-decoration:none;
+    font-weight:bold;
+    color:#1e5aa8;
+}
+.container{
+    padding:15px;
+}
+input{
+    width:100%;
+    padding:10px;
+    margin:6px 0;
+    border:1px solid #ccc;
+    border-radius:8px;
+}
+button{
+    padding:10px 14px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:bold;
+}
+.addBtn{
+    background:green;
+    color:white;
+    width:100%;
+}
+.payBtn{
+    background:orange;
+    color:white;
+}
+.editBtn{
+    background:blue;
+    color:white;
+}
+.removeBtn{
+    background:red;
+    color:white;
+}
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:15px;
+    background:white;
+}
+th,td{
+    padding:10px;
+    border:1px solid #ddd;
+    text-align:center;
+}
+.summary{
+    margin-top:20px;
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    font-size:18px;
+}
+.moneyBox{
+    margin-top:15px;
+    background:#222;
+    color:white;
+    padding:15px;
+    border-radius:10px;
+    font-size:18px;
+}
+#h2{text-align: center;}
+</style>
+</head>
+
+<body>
+
+<header>
+    <img id="header" src="green-lion.png" alt="green tech" width="80px" height="80px">
+</header>
+<h2 id="h2">📒 Dealers System</h2>
+<nav class="nav">
+  <a href="index.html">📦 Stock</a>
+  <a href="sales.html">💰 Sales</a>
+  <a href="history.html">📊 History</a>
+  <a href="dealers.html">📒 Dealers</a>
+  <a href="dealers-history.html">📜 Payments</a>
+  <a href="customers.html">👥 Customers</a>
+</nav>
+
+<div class="container">
+
+<h3>➕ Add Dealer</h3>
+
+<input type="text" id="dealerName" placeholder="Dealer Name">
+<input type="text" id="dealerPhone" placeholder="Dealer Phone">
+<input type="number" id="dealerDebt" placeholder="Debt Amount">
+
+<button class="addBtn" onclick="addDealer()">Add Dealer</button>
+
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Phone</th>
+<th>Debt</th>
+<th>Pay</th>
+<th>Edit</th>
+<th>Remove</th>
+</tr>
+</thead>
+<tbody id="dealerTable"></tbody>
+</table>
+
+<div class="summary">
+📌 Total Debt: <span id="totalDebt">0</span>
+</div>
+
+<div class="moneyBox">
+💵 Money in Drawer: <span id="totalMoney">0</span>
+<br><br>
+<button onclick="setMoney()">Set / Update Money</button>
+</div>
+
+</div>
+
+<script>
+let dealers = JSON.parse(localStorage.getItem("dealers")) || [];
+let dealerHistory = JSON.parse(localStorage.getItem("dealerHistory")) || [];
+let totalMoney = JSON.parse(localStorage.getItem("totalMoney")) || 0;
+
+/* Save */
+function saveDealers(){
+    localStorage.setItem("dealers", JSON.stringify(dealers));
+}
+function saveMoney(){
+    localStorage.setItem("totalMoney", JSON.stringify(totalMoney));
+}
+function saveHistory(){
+    localStorage.setItem("dealerHistory", JSON.stringify(dealerHistory));
+}
+
+/* Add Dealer */
+function addDealer(){
+    let name = document.getElementById("dealerName").value;
+    let phone = document.getElementById("dealerPhone").value;
+    let debt = Number(document.getElementById("dealerDebt").value);
+
+    if(name==="" || debt<=0){
+        alert("Enter dealer name + debt!");
+        return;
+    }
+
+    dealers.push({
+        name:name,
+        phone:phone,
+        debt:debt
+    });
+
+    saveDealers();
+    renderDealers();
+
+    document.getElementById("dealerName").value="";
+    document.getElementById("dealerPhone").value="";
+    document.getElementById("dealerDebt").value="";
+}
+
+/* Render Dealers */
+function renderDealers(){
+    let table="";
+    let totalDebt=0;
+
+    dealers.forEach((d,i)=>{
+        totalDebt += d.debt;
+
+        table += `
+        <tr>
+          <td>${d.name}</td>
+          <td>${d.phone}</td>
+          <td>${d.debt}</td>
+
+          <td><button class="payBtn" onclick="payDealer(${i})">Pay</button></td>
+          <td><button class="editBtn" onclick="editDealer(${i})">Edit</button></td>
+          <td><button class="removeBtn" onclick="removeDealer(${i})">X</button></td>
+        </tr>`;
+    });
+
+    document.getElementById("dealerTable").innerHTML=table;
+    document.getElementById("totalDebt").innerText=totalDebt;
+    document.getElementById("totalMoney").innerText=totalMoney;
+}
+
+/* Remove Dealer */
+function removeDealer(i){
+    if(confirm("Remove this dealer?")){
+        dealers.splice(i,1);
+        saveDealers();
+        renderDealers();
+    }
+}
+
+/* Edit Dealer */
+function editDealer(i){
+    let d = dealers[i];
+
+    let newName = prompt("Edit Name:", d.name);
+    if(newName===null) return;
+
+    let newPhone = prompt("Edit Phone:", d.phone);
+    if(newPhone===null) return;
+
+    let newDebt = prompt("Edit Debt:", d.debt);
+    if(newDebt===null) return;
+
+    newDebt = Number(newDebt);
+
+    d.name = newName;
+    d.phone = newPhone;
+    d.debt = newDebt;
+
+    saveDealers();
+    renderDealers();
+}
+
+/* Pay Dealer */
+function payDealer(i){
+    let amount = prompt("How much did you pay?");
+    if(amount===null) return;
+
+    amount = Number(amount);
+
+    if(amount<=0) return alert("Invalid amount!");
+
+    if(amount > dealers[i].debt)
+        return alert("Payment bigger than debt!");
+
+    if(amount > totalMoney)
+        return alert("Not enough money in drawer!");
+
+    dealers[i].debt -= amount;
+    totalMoney -= amount;
+
+    // Save payment history
+    dealerHistory.push({
+        name: dealers[i].name,
+        paid: amount,
+        datetime: new Date().toLocaleString()
+    });
+
+    saveDealers();
+    saveMoney();
+    saveHistory();
+
+    alert("Payment Saved ✅");
+    renderDealers();
+}
+
+/* Set Money */
+function setMoney(){
+    let money = prompt("Enter total money in drawer:");
+    if(money===null) return;
+
+    totalMoney = Number(money);
+
+    saveMoney();
+    renderDealers();
+}
+
+renderDealers();
+</script>
+
+</body>
+</html>
