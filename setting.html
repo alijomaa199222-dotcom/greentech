@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings</title>
+
+<style>
+body{
+    font-family:Arial;
+    margin:0;
+    background:#f2f2f2;
+}
+
+header{
+    background:#222;
+    color:white;
+    padding:15px;
+    text-align:center;
+    font-size:22px;
+}
+
+.nav{
+    display:flex;
+    justify-content:space-around;
+    background:white;
+    padding:12px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.15);
+}
+
+.nav a{
+    text-decoration:none;
+    font-weight:bold;
+    color:#222;
+}
+
+.container{
+    padding:20px;
+    text-align:center;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    margin:15px auto;
+    border-radius:12px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.2);
+    max-width:400px;
+}
+
+button{
+    padding:12px 18px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:16px;
+    font-weight:bold;
+    margin:10px;
+}
+
+.backupBtn{
+    background:green;
+    color:white;
+}
+
+.restoreBtn{
+    background:blue;
+    color:white;
+}
+
+.resetBtn{
+    background:red;
+    color:white;
+}
+
+.note{
+    font-size:14px;
+    color:#444;
+    margin-top:10px;
+}
+  #h2{text-align: center;}
+</style>
+</head>
+
+<body>
+
+<header>
+    <img id="header" src="green-lion.png" alt="green tech" width="80px" height="80px">
+</header>
+<h2 id="h2">⚙️ Settings</h2>
+<nav class="nav">
+  <a href="index.html">📦 Stock</a>
+  <a href="sales.html">💰 Sales</a>
+  <a href="history.html">📊 History</a>
+  <a href="dealers.html">📒 Dealers</a>
+  <a href="dealers-history.html">📜 Payments</a>
+  <a href="customers.html">👥 Customers</a>
+  <a href="setting.html">⚙️ Settings</a>
+</nav>
+
+<div class="container">
+
+<div class="card">
+    <h2>⬇ Backup Data</h2>
+
+    <button class="backupBtn" onclick="backupData()">
+        Download Backup File
+    </button>
+
+    <p class="note">
+        بعد ما ينزل الملف، ارفعه على Google Drive أو ابعته على Gmail.
+    </p>
+</div>
+
+<div class="card">
+    <h2>⬆ Restore Data</h2>
+
+    <input type="file" id="restoreFile" onchange="restoreData(event)" hidden>
+
+    <button class="restoreBtn"
+        onclick="document.getElementById('restoreFile').click()">
+        Upload Backup File
+    </button>
+
+    <p class="note">
+        اختر ملف system-backup.json لاسترجاع كل البيانات.
+    </p>
+</div>
+
+<div class="card">
+    <h2>🛑 Reset System</h2>
+
+    <button class="resetBtn" onclick="resetSystem()">
+        Delete All Data
+    </button>
+
+    <p class="note">
+        ⚠ هذا يمسح كل Stock + Sales + History نهائياً.
+    </p>
+</div>
+
+</div>
+
+<script>
+/* ✅ Backup */
+function backupData(){
+
+    let data = {
+        stock: JSON.parse(localStorage.getItem("stock")) || [],
+        history: JSON.parse(localStorage.getItem("history")) || [],
+        dailySales: JSON.parse(localStorage.getItem("dailySales")) || [],
+        totalMoney: JSON.parse(localStorage.getItem("totalMoney")) || 0
+    };
+
+    let blob = new Blob(
+        [JSON.stringify(data, null, 2)],
+        {type:"application/json"}
+    );
+
+    let link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+
+    link.download = "system-backup.json";
+    link.click();
+
+    alert("✅ Backup Downloaded Successfully!");
+}
+
+
+/* ✅ Restore */
+function restoreData(event){
+
+    let file = event.target.files[0];
+    if(!file) return;
+
+    let reader = new FileReader();
+
+    reader.onload = function(e){
+
+        let data = JSON.parse(e.target.result);
+
+        localStorage.setItem("stock", JSON.stringify(data.stock));
+        localStorage.setItem("history", JSON.stringify(data.history));
+        localStorage.setItem("dailySales", JSON.stringify(data.dailySales));
+        localStorage.setItem("totalMoney", JSON.stringify(data.totalMoney));
+
+        alert("✅ Data Restored Successfully!");
+
+        location.reload();
+    };
+
+    reader.readAsText(file);
+}
+
+
+/* ✅ Reset */
+function resetSystem(){
+
+    if(confirm("Are you sure you want to delete EVERYTHING?")){
+
+        localStorage.clear();
+
+        alert("✅ System Reset Done!");
+
+        location.reload();
+    }
+}
+</script>
+
+</body>
+  </html>
